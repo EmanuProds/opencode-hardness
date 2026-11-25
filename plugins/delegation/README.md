@@ -6,7 +6,7 @@ Versioned copy of the `delegation` plugin for OpenCode.
 
 | File | Purpose |
 |------|---------|
-| `delegation.ts` | Current version (v2.0.0), with all improvements applied |
+| `delegation.ts` | Current version (v1.0.0), with all improvements applied |
 | `delegation.test.ts` | Unit tests for the pure helper functions |
 | `delegation.original.ts` | Original copy from `~/.config/opencode/plugins/delegation.ts` |
 | `README.md` | This document |
@@ -57,7 +57,7 @@ Versioned copy of the `delegation` plugin for OpenCode.
 
 ## 4. Suggested improvements (applied in v1.1.0 where marked)
 
-| # | Improvement | Status in v2.0.0 | Rationale |
+| # | Improvement | Status in v1.0.0 | Rationale |
 |---|-------------|------------------|-----------|
 | 1 | Protocol version field (`protocolVersion`) in receipt | ✅ Added | Lets the orchestrator reject receipts from older/newer protocol versions. |
 | 2 | TTL/expiration for specs (default 24h) | ✅ Added | Prevents stale specs from being reused across unrelated delegations. |
