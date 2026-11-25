@@ -1,6 +1,5 @@
 {
   "name": "@opencode-hardness/freellm-plugin",
-  "version": "1.0.0",
   "description": "OpenCode plugin that publishes live FreeLLMAPI models into the provider catalog via ctx.provider.transform.",
   "main": "freellm.ts",
   "type": "module",

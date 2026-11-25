@@ -1,6 +1,5 @@
 {
   "name": "@opencode-hardness/memory-store",
-  "version": "1.0.0",
   "description": "Persistent memory and session checkpoints backed by SQLite with FTS5 search and optional Jev reranking.",
   "main": "memory-store.ts",
   "type": "module",

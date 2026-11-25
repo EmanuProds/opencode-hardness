@@ -1,6 +1,5 @@
 {
   "name": "opencode-plugin-delegation",
-  "version": "1.0.0",
   "description": "Delegation protocol — structured receipts and shape validation for OpenCode subagent delegation.",
   "main": "delegation.ts",
   "type": "module",

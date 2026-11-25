@@ -1,6 +1,5 @@
 {
   "name": "@opencode-hardness/scope-guard",
-  "version": "1.0.0",
   "description": "Tool-level gate for OpenCode: directory/extension per agent, concurrency limit, loop detection, known-tool allowlist.",
   "main": "scope-guard.ts",
   "type": "module",

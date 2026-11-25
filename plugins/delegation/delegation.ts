@@ -28,7 +28,6 @@ interface Spec {
 }
 
 interface Receipt {
-  protocolVersion: string;
   objective: string;
   filesChanged: string[];
   gateCommand: string;
@@ -41,8 +40,6 @@ interface Receipt {
   parentSessionID?: string;
   fileHashes?: Record<string, string>;
 }
-
-const PROTOCOL_VERSION = "1";
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -304,7 +301,7 @@ export default Plugin.define({
 
           return {
             content:
-              `spec recorded (v${PROTOCOL_VERSION}): ${spec.required.length} required identifier(s) ` +
+              `spec recorded: ${spec.required.length} required identifier(s) ` +
               `(${spec.required.join(", ") || "none"}). Expires in ${spec.ttlMs}ms. ` +
               `The next subagent write is checked against it.`,
           };
@@ -357,7 +354,6 @@ export default Plugin.define({
         },
         execute: async (input, context) => {
           const receipt: Receipt = {
-            protocolVersion: PROTOCOL_VERSION,
             objective: String(input.objective ?? ""),
             filesChanged: (input.filesChanged ?? []).map((value) => String(value)),
             gateCommand: String(input.gateCommand ?? ""),
@@ -412,7 +408,7 @@ export default Plugin.define({
 
           return {
             content:
-              `receipt recorded (v${PROTOCOL_VERSION}) for "${receipt.objective}": ` +
+              `receipt recorded for "${receipt.objective}": ` +
               `${receipt.filesChanged.length} file(s) changed, ` +
               `${receipt.criteria.length} criterion(s), ` +
               `${receipt.blocked.length} blocked, ` +
