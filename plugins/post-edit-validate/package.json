@@ -1,7 +1,7 @@
 {
   "name": "@opencode-hardness/post-edit-validate",
-  "version": "1.0.0",
-  "description": "Runs domain gate commands automatically after every write/edit to catch broken code early.",
+  "version": "2.0.0",
+  "description": "Runs domain gate commands automatically after every write/edit with content caching, debounce, ignore patterns, and multi-command support.",
   "main": "post-edit-validate.ts",
   "type": "module",
   "scripts": {
@@ -13,7 +13,9 @@
     "validation",
     "gate",
     "lint",
-    "build"
+    "build",
+    "cache",
+    "debounce"
   ],
   "license": "MIT",
   "peerDependencies": {

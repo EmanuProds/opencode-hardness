@@ -1,111 +1,107 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 
-const DEFAULT_GATE_COMMANDS: Record<string, string> = {
-  "contracts/": "make contracts-lint",
-  "core/": "cd core && go build ./... && go vet ./...",
-  "interface/web/": "cd interface/web && npm run build && npm run lint",
-  "database/": "cd database/sqlc && sqlc diff && sqlc vet",
-};
+// Import pure helpers from the plugin module
+import {
+  findProjectRoot,
+  normalizePath,
+  domainOf,
+  resolveProjectRoot,
+  expandEnvVars,
+  matchesIgnorePattern,
+} from "./post-edit-validate.ts";
 
-const PROJECT_MARKERS = [".git/", "package.json", "go.mod", "Cargo.toml", "pyproject.toml"];
-
-function findProjectRootFromPath(target: string): string | null {
-  let p = target.replace(/^\.\//, "").replace(/^\/+/, "");
-  for (const marker of PROJECT_MARKERS) {
-    const idx = p.indexOf(marker);
-    if (idx >= 0) {
-      const upToMarker = p.slice(0, idx);
-      if (marker.endsWith("/")) {
-        const markerDirPath = upToMarker;
-        const lastSlash = markerDirPath.lastIndexOf("/");
-        if (lastSlash >= 0) {
-          return markerDirPath.slice(0, lastSlash + 1);
-        }
-        return "";
-      } else {
-        const lastSlash = upToMarker.lastIndexOf("/");
-        if (lastSlash >= 0) {
-          return upToMarker.slice(0, lastSlash + 1);
-        }
-        return "";
-      }
-    }
-  }
-  return null;
-}
-
-function getProjectRelativePath(target: string): string {
-  let p = target.replace(/^\.\//, "").replace(/^\/+/, "");
-  const projectRoot = findProjectRootFromPath(p);
-  if (projectRoot) {
-    if (p.startsWith(projectRoot)) {
-      return p.slice(projectRoot.length);
-    }
-  }
-  return p;
-}
-
-// Note: domainOf requires filesystem walking to find markers at the project root
-// from arbitrary file paths. The string-only version below only works when the
-// marker appears in the path string BEFORE the domain path (unnatural structure).
-// In the real plugin, ctx.tool.hook receives the target file path and walks the
-// actual filesystem to find the project root.
-function domainOf(target: string): string | null {
-  const relativePath = getProjectRelativePath(target);
-  for (const prefix of Object.keys(DEFAULT_GATE_COMMANDS)) {
-    if (relativePath.startsWith(prefix)) return prefix;
-  }
-  return null;
-}
-
-describe("post-edit-validate helpers", () => {
-  describe("findProjectRootFromPath", () => {
-    it("finds project root when .git/ is present", () => {
-      const result = findProjectRootFromPath("/home/user/project/.git/config");
-      assert.strictEqual(result, "home/user/project/");
-    });
-    it("finds project root when package.json is present", () => {
-      const result = findProjectRootFromPath("/home/user/project/package.json");
-      assert.strictEqual(result, "home/user/project/");
-    });
-    it("finds project root when go.mod is present", () => {
-      const result = findProjectRootFromPath("/home/user/project/go.mod");
-      assert.strictEqual(result, "home/user/project/");
-    });
-    it("returns null when no marker found", () => {
-      const result = findProjectRootFromPath("/home/user/random/path/file.ts");
-      assert.strictEqual(result, null);
-    });
+describe("normalizePath", () => {
+  it("removes leading ./ and /", () => {
+    assert.strictEqual(normalizePath("./src/file.ts"), "src/file.ts");
+    assert.strictEqual(normalizePath("/src/file.ts"), "src/file.ts");
   });
-
-  describe("getProjectRelativePath", () => {
-    it("returns relative path when project root found via .git/", () => {
-      const result = getProjectRelativePath("/home/user/project/.git/config");
-      assert.strictEqual(result, ".git/config");
-    });
-    it("returns relative path when project root found via package.json", () => {
-      const result = getProjectRelativePath("/home/user/project/package.json");
-      assert.strictEqual(result, "package.json");
-    });
-    it("returns full path when no project root found", () => {
-      const result = getProjectRelativePath("/home/user/random/path/file.ts");
-      assert.strictEqual(result, "home/user/random/path/file.ts");
-    });
+  it("extracts project-relative path when .git/ is present", () => {
+    const result = normalizePath("/home/user/project/.git/config");
+    assert.strictEqual(result, "project/.git/config");
   });
+  it("extracts project-relative path when package.json is present", () => {
+    const result = normalizePath("/home/user/project/package.json");
+    assert.strictEqual(result, "project/package.json");
+  });
+  it("returns as-is when no project marker found", () => {
+    const result = normalizePath("/home/user/random/path/file.ts");
+    assert.strictEqual(result, "home/user/random/path/file.ts");
+  });
+});
 
-  describe("domainOf (string-only, limited - for documentation)", () => {
-    // Note: These tests demonstrate the LIMITATION of string-only domain detection.
-    // The real plugin uses filesystem walking from the target file path.
-    it("returns null for typical paths without marker in string", () => {
-      // Without a marker in the path string, domainOf cannot detect the domain
-      assert.strictEqual(domainOf("/home/user/project/contracts/schema.yaml"), null);
-      assert.strictEqual(domainOf("/home/user/project/core/main.go"), null);
-      assert.strictEqual(domainOf("/home/user/project/interface/web/app.tsx"), null);
-      assert.strictEqual(domainOf("/home/user/project/database/sqlc/schema.sql"), null);
-    });
-    it("returns null for unknown domain", () => {
-      assert.strictEqual(domainOf("/home/user/project/.git/config/unknown/file.ts"), null);
-    });
+describe("findProjectRoot", () => {
+  it("returns null for non-existent directory", () => {
+    assert.strictEqual(findProjectRoot("/nonexistent/path"), null);
+  });
+});
+
+describe("domainOf", () => {
+  it("detects contracts domain from relative path", () => {
+    assert.strictEqual(domainOf("contracts/schema.yaml"), "contracts/");
+  });
+  it("detects core domain from relative path", () => {
+    assert.strictEqual(domainOf("core/main.go"), "core/");
+  });
+  it("detects web domain from relative path", () => {
+    assert.strictEqual(domainOf("interface/web/app.tsx"), "interface/web/");
+  });
+  it("detects database domain from relative path", () => {
+    assert.strictEqual(domainOf("database/sqlc/schema.sql"), "database/");
+  });
+  it("returns null for unknown domain", () => {
+    assert.strictEqual(domainOf("unknown/file.ts"), null);
+  });
+  it("returns null for paths without domain prefix", () => {
+    assert.strictEqual(domainOf("config/settings.json"), null);
+  });
+});
+
+describe("resolveProjectRoot", () => {
+  it("returns configured root when provided", () => {
+    const result = resolveProjectRoot("/any/path", "/configured/root");
+    assert.strictEqual(result, "/configured/root");
+  });
+  it("falls back to cwd when no marker found", () => {
+    const result = resolveProjectRoot("/home/user/random/file.ts");
+    assert.strictEqual(result, process.cwd());
+  });
+});
+
+describe("expandEnvVars", () => {
+  it("replaces {env:VAR} with environment value", () => {
+    process.env.TEST_GATE_VAR = "my-value";
+    const result = expandEnvVars("echo {env:TEST_GATE_VAR}");
+    assert.strictEqual(result, "echo my-value");
+    delete process.env.TEST_GATE_VAR;
+  });
+  it("leaves unknown vars empty", () => {
+    const result = expandEnvVars("echo {env:NONEXISTENT_VAR_12345}");
+    assert.strictEqual(result, "echo ");
+  });
+  it("leaves command unchanged when no env vars", () => {
+    const result = expandEnvVars("go build ./...");
+    assert.strictEqual(result, "go build ./...");
+  });
+});
+
+describe("matchesIgnorePattern", () => {
+  it("returns false for empty patterns", () => {
+    assert.strictEqual(matchesIgnorePattern("src/file.ts", []), false);
+  });
+  it("matches suffix pattern (*.test.ts)", () => {
+    assert.strictEqual(matchesIgnorePattern("src/component.test.ts", ["*.test.ts"]), true);
+    assert.strictEqual(matchesIgnorePattern("src/component.ts", ["*.test.ts"]), false);
+  });
+  it("matches prefix pattern (node_modules/)", () => {
+    assert.strictEqual(matchesIgnorePattern("node_modules/lodash/index.js", ["node_modules/"]), true);
+    assert.strictEqual(matchesIgnorePattern("src/file.ts", ["node_modules/"]), false);
+  });
+  it("matches exact pattern", () => {
+    assert.strictEqual(matchesIgnorePattern("README.md", ["README.md"]), true);
+    assert.strictEqual(matchesIgnorePattern("readme.md", ["README.md"]), false);
+  });
+  it("matches substring pattern", () => {
+    assert.strictEqual(matchesIgnorePattern("dist/bundle.js", ["dist/"]), true);
   });
 });
