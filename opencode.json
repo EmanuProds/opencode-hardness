@@ -13,12 +13,12 @@
     "servers": {
       "context7": {
         "headers": {
-          "CONTEXT7_API_KEY": "{env:CONTEXT7_API_KEY}"
+          "Authorization": "Bearer {env:CONTEXT7_API_KEY}"
         },
         "oauth": false,
         "type": "remote",
         "url": "https://mcp.context7.com/mcp"
-      },
+      }
     },
     "timeout": {
       "catalog": 30000,
@@ -27,68 +27,6 @@
     }
   },
   "snapshots": true,
-  "model": "freellmapi/auto:orchastrate",
-  "provider": {
-    "freellmapi": {
-      "npm": "@ai-sdk/openai-compatible",
-      "name": "FreeLLMAPI",
-      "options": {
-        "baseURL": "http://127.0.0.1:31415/v1",
-        "apiKey": "{file:~/.config/opencode/secrets/freellm.key}"
-      },
-      "models": {
-        "auto": {
-          "name": "Auto (router picks the best available model)",
-          "limit": {
-            "context": 104857,
-            "output": 8192
-          }
-        },
-        "fusion": {
-          "name": "Fusion (panel of models answer in parallel, a judge synthesizes one answer)",
-          "limit": {
-            "context": 104857,
-            "output": 8192
-          }
-        },
-        "auto:code": {
-          "name": "Auto: Code (named fallback chain)",
-          "limit": {
-            "context": 204800,
-            "output": 8192
-          }
-        },
-        "auto:contracts": {
-          "name": "Auto: Contracts (named fallback chain)",
-          "limit": {
-            "context": 209715,
-            "output": 8192
-          }
-        },
-        "auto:database": {
-          "name": "Auto: Database (named fallback chain)",
-          "limit": {
-            "context": 800000,
-            "output": 8192
-          }
-        },
-        "auto:review": {
-          "name": "Auto: Review (named fallback chain)",
-          "limit": {
-            "context": 838860,
-            "output": 8192
-          }
-        },
-        "auto:orchastrate": {
-          "name": "Auto: Orchastrate (named fallback chain)",
-          "limit": {
-            "context": 800000,
-            "output": 8192
-          }
-        }
-      }
-    }
-  },
   "lsp": {
     "github-actions": {
       "command": [
