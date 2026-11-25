@@ -16,7 +16,7 @@ import { Plugin } from "@opencode/plugin";
  * with no field to hold its fact gets approximated by the nearest field
  * available, and the approximation passes every test.
  *
- * @version 2.0.0
+ * @version 1.0.0
  */
 
 interface Spec {
@@ -44,7 +44,7 @@ interface Receipt {
   fileHashes?: Record<string, string>;
 }
 
-const PROTOCOL_VERSION = "2.0.0";
+const PROTOCOL_VERSION = "1.0.0";
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
