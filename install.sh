@@ -21,19 +21,22 @@ echo "==> Installing OpenCode plugins from opencode-hardness"
 # --- Ensure plugin directory exists ---
 mkdir -p "${PLUGIN_DST_DIR}"
 
-# --- Copy every plugin from plugins/*/<plugin>.ts ---
+# --- Copy every plugin folder entirely ---
 installed=0
 for plugin_dir in "${PLUGINS_SRC_DIR}"/*/; do
   plugin_name="$(basename "${plugin_dir}")"
-  plugin_src="${plugin_dir}/${plugin_name}.ts"
 
-  if [[ -f "${plugin_src}" ]]; then
-    cp "${plugin_src}" "${PLUGIN_DST_DIR}/${plugin_name}.ts"
-    echo "   plugin installed: ${plugin_name}.ts"
-    installed=$((installed + 1))
-  else
-    echo "   WARNING: no ${plugin_name}.ts found in ${plugin_dir}, skipping."
+  # Skip non-plugin directories (e.g. lib/)
+  if [[ ! -f "${plugin_dir}/server.js" && ! -f "${plugin_dir}/${plugin_name}.ts" && ! -f "${plugin_dir}/${plugin_name}.js" ]]; then
+    echo "   skipping non-plugin directory: ${plugin_name}"
+    continue
   fi
+
+  mkdir -p "${PLUGIN_DST_DIR}/${plugin_name}"
+  cp -r "${plugin_dir}"* "${PLUGIN_DST_DIR}/${plugin_name}/" 2>/dev/null || true
+
+  echo "   plugin installed: ${plugin_name}"
+  installed=$((installed + 1))
 done
 
 if [[ "${installed}" -eq 0 ]]; then
