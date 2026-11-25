@@ -15,8 +15,6 @@ import { Plugin } from "@opencode/plugin";
  * The point of `delegation_spec` is the failure it exists to prevent: a rule
  * with no field to hold its fact gets approximated by the nearest field
  * available, and the approximation passes every test.
- *
- * @version 1.0.0
  */
 
 interface Spec {
@@ -30,7 +28,6 @@ interface Spec {
 }
 
 interface Receipt {
-  protocolVersion: string;
   objective: string;
   filesChanged: string[];
   gateCommand: string;
@@ -43,8 +40,6 @@ interface Receipt {
   parentSessionID?: string;
   fileHashes?: Record<string, string>;
 }
-
-const PROTOCOL_VERSION = "1.0.0";
 
 const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -306,7 +301,7 @@ export default Plugin.define({
 
           return {
             content:
-              `spec recorded (v${PROTOCOL_VERSION}): ${spec.required.length} required identifier(s) ` +
+              `spec recorded: ${spec.required.length} required identifier(s) ` +
               `(${spec.required.join(", ") || "none"}). Expires in ${spec.ttlMs}ms. ` +
               `The next subagent write is checked against it.`,
           };
@@ -359,7 +354,6 @@ export default Plugin.define({
         },
         execute: async (input, context) => {
           const receipt: Receipt = {
-            protocolVersion: PROTOCOL_VERSION,
             objective: String(input.objective ?? ""),
             filesChanged: (input.filesChanged ?? []).map((value) => String(value)),
             gateCommand: String(input.gateCommand ?? ""),
@@ -414,7 +408,7 @@ export default Plugin.define({
 
           return {
             content:
-              `receipt recorded (v${PROTOCOL_VERSION}) for "${receipt.objective}": ` +
+              `receipt recorded for "${receipt.objective}": ` +
               `${receipt.filesChanged.length} file(s) changed, ` +
               `${receipt.criteria.length} criterion(s), ` +
               `${receipt.blocked.length} blocked, ` +
@@ -636,12 +630,3 @@ export default Plugin.define({
     });
   },
 });
-
-async function readFileIfPossibleTopLevel(path: string): Promise<string | undefined> {
-  try {
-    const fs = await import("node:fs/promises");
-    return await fs.readFile(path, "utf8");
-  } catch {
-    return undefined;
-  }
-}

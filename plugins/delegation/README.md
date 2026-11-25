@@ -1,13 +1,13 @@
 # opencode-hardness / plugins / delegation
 
-Versioned copy of the `delegation` plugin for OpenCode.
+Copy of the `delegation` plugin for OpenCode.
 
 ## Files
 
 | File | Purpose |
 |------|---------|
-| `delegation.ts` | Current version (v1.0.0), with all improvements applied |
-| `delegation.test.ts` | Unit tests for the pure helper functions |
+| `delegation.ts` | Plugin source with all improvements applied |
+| `delegation.test.ts` | Unit tests for pure helper functions |
 | `delegation.original.ts` | Original copy from `~/.config/opencode/plugins/delegation.ts` |
 | `README.md` | This document |
 
@@ -48,28 +48,27 @@ Versioned copy of the `delegation` plugin for OpenCode.
 1. **No cross-file required-identifier check.** Each written file is checked against the parent spec in isolation. If the spec requires identifiers A and B, and the subagent writes A in file X and B in file Y, neither file alone fails — but the artifact as a whole is incomplete.
 2. **No integrity binding of changed files.** `filesChanged` is self-declared; there is no hash/checksum proving the listed files were actually written or that they match what was checked.
 3. **Spec is single-slot per session.** Calling `delegation_spec` overwrites the previous spec; there is no support for multiple concurrent subdelegations with different shapes.
-4. **No TTL in the original.** Specs and reports persist indefinitely in `ctx.storage` (the v1.1.0 copy adds a `ttlMs` defaulting to 24h).
+4. **No TTL in the original.** Specs and reports persist indefinitely in `ctx.storage` (ttlMs defaults to 24h).
 5. **Review trigger is a log, not a block.** The `execute.after` hook only logs a warning; the real enforcement is the separate `execute.before` hook. If the orchestrator ignores the warning and completes anyway, nothing stops it (other than host-level behavior).
-6. **No protocol versioning** in the original receipt/spec (added in v1.1.0).
+6. **No protocol versioning** in the original receipt/spec.
 7. **No graphify integration.** `contextMap` is stored but never validated against `graphify-out/graph.json`.
 8. **No tests.** No unit/integration test suite for the plugin exists in the repo.
 9. **Agent identity trust.** `receipt.agent` comes from `context.agent`, which is not cryptographically bound to the subagent session.
 
-## 4. Suggested improvements (applied in v1.1.0 where marked)
+## 4. Suggested improvements
 
-| # | Improvement | Status in v1.0.0 | Rationale |
-|---|-------------|------------------|-----------|
-| 1 | Protocol version field (`protocolVersion`) in receipt | ✅ Added | Lets the orchestrator reject receipts from older/newer protocol versions. |
-| 2 | TTL/expiration for specs (default 24h) | ✅ Added | Prevents stale specs from being reused across unrelated delegations. |
-| 3 | Expired-spec rejection in `delegation_report` | ✅ Added | Forces re-declaration of shape when a spec has lapsed. |
-| 4 | `parentSessionID` on receipt | ✅ Added | Traceability from receipt back to the delegating session. |
-| 5 | SHA-256 file hashes (`fileHashes`) on receipt | ✅ Added | Binds `filesChanged` to actual file contents at delivery time. |
-| 6 | Cross-file required-identifier validation | ✅ Added | Verifies all required identifiers appear somewhere across `filesChanged`, not just per-file. |
-| 7 | Review trigger as hard block | ✅ Added | An implementation report is blocked while `review-required` is set for the parent session (another implementation report was already accepted without an intervening review). |
-| 8 | Support multiple specs per session (keyed by subagent) | ✅ Added | `delegation_spec` accepts optional `subagentSessionID`; specs are keyed `spec:{parent}:{subagent}` with fallback to single-spec key. |
-| 9 | Graphify `contextMap` validation | ✅ Added | Validates `contextMap` against `graphify-out/graph.json` when the graph exists (non-blocking warning). |
-| 10 | Unit tests | ✅ Added | `delegation.test.ts` covers all pure helper functions. |
-| 11 | Per-file shape check made non-blocking advisory | ✅ Changed | The per-file write hook now logs an advisory instead of blocking; the hard cross-file check happens in `delegation_report`. |
+| # | Improvement | Status | Rationale |
+|---|-------------|--------|-----------|
+| 1 | TTL/expiration for specs (default 24h) | ✅ Added | Prevents stale specs from being reused across unrelated delegations. |
+| 2 | Expired-spec rejection in `delegation_report` | ✅ Added | Forces re-declaration of shape when a spec has lapsed. |
+| 3 | `parentSessionID` on receipt | ✅ Added | Traceability from receipt back to the delegating session. |
+| 4 | SHA-256 file hashes (`fileHashes`) on receipt | ✅ Added | Binds `filesChanged` to actual file contents at delivery time. |
+| 5 | Cross-file required-identifier validation | ✅ Added | Verifies all required identifiers appear somewhere across `filesChanged`, not just per-file. |
+| 6 | Review trigger as hard block | ✅ Added | An implementation report is blocked while `review-required` is set for the parent session (another implementation report was already accepted without an intervening review). |
+| 7 | Support multiple specs per session (keyed by subagent) | ✅ Added | `delegation_spec` accepts optional `subagentSessionID`; specs are keyed `spec:{parent}:{subagent}` with fallback to single-spec key. |
+| 8 | Graphify `contextMap` validation | ✅ Added | Validates `contextMap` against `graphify-out/graph.json` when the graph exists (non-blocking warning). |
+| 9 | Unit/integration tests | ✅ Added | `delegation.test.ts` covers all pure helper functions. |
+| 10 | Per-file shape check made non-blocking advisory | ✅ Changed | The per-file write hook now logs an advisory instead of blocking; the hard cross-file check happens in `delegation_report`. |
 
 ## 5. Comparison with existing OpenCode plugins
 
@@ -107,8 +106,3 @@ This means `delegation` should be treated as a **local/custom plugin**, not a dr
 6. Orchestrator reads the receipt with `delegation_receipt` and decides PASS/FAIL.
 7. After `code`/`database`/`contracts`, route through `review` before completing (mandatory).
 
-## 7. Versioning notes
-
-- Original: `~/.config/opencode/plugins/delegation.ts` (no version header).
-- This repo: `delegation.ts` v1.1.0 (improved), `delegation.original.ts` (verbatim copy of original).
-- Future versions should bump `PROTOCOL_VERSION` and document breaking changes here.

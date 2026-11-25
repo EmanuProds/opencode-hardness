@@ -1,0 +1,20 @@
+{
+  "name": "@opencode-hardness/graphify-navigator",
+  "description": "Ensures the Graphify knowledge graph is available and up-to-date before and after delegations.",
+  "main": "graphify-navigator.ts",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test graphify-navigator.test.ts"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "graphify",
+    "knowledge-graph",
+    "navigation"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.0.0"
+  }
+}
