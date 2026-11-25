@@ -6,7 +6,8 @@ Versioned copy of the `delegation` plugin for OpenCode.
 
 | File | Purpose |
 |------|---------|
-| `delegation.ts` | Current version (v1.1.0), with improvements applied |
+| `delegation.ts` | Current version (v2.0.0), with all improvements applied |
+| `delegation.test.ts` | Unit tests for the pure helper functions |
 | `delegation.original.ts` | Original copy from `~/.config/opencode/plugins/delegation.ts` |
 | `README.md` | This document |
 
@@ -56,18 +57,19 @@ Versioned copy of the `delegation` plugin for OpenCode.
 
 ## 4. Suggested improvements (applied in v1.1.0 where marked)
 
-| # | Improvement | Status in v1.1.0 | Rationale |
+| # | Improvement | Status in v2.0.0 | Rationale |
 |---|-------------|------------------|-----------|
 | 1 | Protocol version field (`protocolVersion`) in receipt | ✅ Added | Lets the orchestrator reject receipts from older/newer protocol versions. |
 | 2 | TTL/expiration for specs (default 24h) | ✅ Added | Prevents stale specs from being reused across unrelated delegations. |
 | 3 | Expired-spec rejection in `delegation_report` | ✅ Added | Forces re-declaration of shape when a spec has lapsed. |
 | 4 | `parentSessionID` on receipt | ✅ Added | Traceability from receipt back to the delegating session. |
-| 5 | SHA-256 file hashes (`fileHashes`) on receipt | ⬜ Not yet | Bind `filesChanged` to actual file contents at delivery time. |
-| 6 | Cross-file required-identifier validation | ⬜ Not yet | Verify all required identifiers appear somewhere across `filesChanged`, not just per-file. |
-| 7 | Make review trigger a hard block on task completion | ⬜ Not yet | Currently only a warning; completion without review should be blocked. |
-| 8 | Support multiple specs per session (keyed by subagent) | ⬜ Not needed now | Only if concurrent multi-shape delegations are required. |
-| 9 | Graphify `contextMap` validation | ⬜ Not yet | Verify the declared context map matches `graphify-out/graph.json`. |
-| 10 | Unit/integration tests | ⬜ Not yet | Shape check, receipt validation, and review enforcement need coverage. |
+| 5 | SHA-256 file hashes (`fileHashes`) on receipt | ✅ Added | Binds `filesChanged` to actual file contents at delivery time. |
+| 6 | Cross-file required-identifier validation | ✅ Added | Verifies all required identifiers appear somewhere across `filesChanged`, not just per-file. |
+| 7 | Review trigger as hard block | ✅ Added | An implementation report is blocked while `review-required` is set for the parent session (another implementation report was already accepted without an intervening review). |
+| 8 | Support multiple specs per session (keyed by subagent) | ✅ Added | `delegation_spec` accepts optional `subagentSessionID`; specs are keyed `spec:{parent}:{subagent}` with fallback to single-spec key. |
+| 9 | Graphify `contextMap` validation | ✅ Added | Validates `contextMap` against `graphify-out/graph.json` when the graph exists (non-blocking warning). |
+| 10 | Unit tests | ✅ Added | `delegation.test.ts` covers all pure helper functions. |
+| 11 | Per-file shape check made non-blocking advisory | ✅ Changed | The per-file write hook now logs an advisory instead of blocking; the hard cross-file check happens in `delegation_report`. |
 
 ## 5. Comparison with existing OpenCode plugins
 
