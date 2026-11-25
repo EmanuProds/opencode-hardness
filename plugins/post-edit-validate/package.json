@@ -1,0 +1,22 @@
+{
+  "name": "@opencode-hardness/post-edit-validate",
+  "version": "1.0.0",
+  "description": "Runs domain gate commands automatically after every write/edit to catch broken code early.",
+  "main": "post-edit-validate.ts",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test post-edit-validate.test.ts"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "validation",
+    "gate",
+    "lint",
+    "build"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.0.0"
+  }
+}

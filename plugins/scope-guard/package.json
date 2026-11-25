@@ -1,0 +1,22 @@
+{
+  "name": "@opencode-hardness/scope-guard",
+  "version": "1.0.0",
+  "description": "Tool-level gate for OpenCode: directory/extension per agent, concurrency limit, loop detection, known-tool allowlist.",
+  "main": "scope-guard.ts",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test scope-guard.test.ts"
+  },
+  "keywords": [
+    "opencode",
+    "plugin",
+    "scope",
+    "guard",
+    "concurrency",
+    "loop-detection"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@opencode/plugin": ">=2.0.0"
+  }
+}

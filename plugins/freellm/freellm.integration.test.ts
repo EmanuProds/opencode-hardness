@@ -1,6 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 import { readFile } from "node:fs/promises";
+import { homedir } from "node:os";
 
 /**
  * Testes de integração contra o FreeLLMAPI real.
@@ -8,7 +9,7 @@ import { readFile } from "node:fs/promises";
  * usando a api key armazenada em ~/.config/opencode/secrets/freellm.key
  */
 
-const API_KEY_PATH = `${process.env.HOME ?? "/home/emanuel"}/.config/opencode/secrets/freellm.key`;
+const API_KEY_PATH = `${process.env.HOME ?? homedir()}/.config/opencode/secrets/freellm.key`;
 const BASE_URL = "http://127.0.0.1:31415";
 
 async function loadApiKey(): Promise<string> {

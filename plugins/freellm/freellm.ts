@@ -15,8 +15,6 @@ import { Plugin } from "@opencode/plugin";
  * The plugin does NOT modify opencode.json. It uses the OpenCode v2
  * `provider.transform` / `integration.transform` APIs, exactly like
  * `@omniroute/opencode-plugin-v2`.
- *
- * @version 1.0.0
  */
 
 const PLUGIN_ID = "freellm";
