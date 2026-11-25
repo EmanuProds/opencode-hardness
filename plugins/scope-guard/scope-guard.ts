@@ -17,11 +17,11 @@ import { Plugin } from "@opencode/plugin";
  * A prompt rule is a suggestion. This is not.
  */
 
-// Detecção de loops de execução: limite de chamadas da mesma tool por sessão
-// dentro de uma janela de tempo.
-const LOOP_WINDOW_MS = 60_000; // 1 minuto
-const MAX_CALLS_PER_TOOL = 30; // máximo de chamadas da mesma tool na janela
-const MAX_TOTAL_CALLS = 200; // máximo de chamadas totais na janela
+// Execution loop detection: limit calls of the same tool per session
+// within a time window.
+const LOOP_WINDOW_MS = 60_000; // 1 minute
+const MAX_CALLS_PER_TOOL = 30; // max calls of the same tool in the window
+const MAX_TOTAL_CALLS = 200; // max total calls in the window
 
 interface ToolCallRecord {
   tool: string;
@@ -50,9 +50,9 @@ const STACK_SCOPES: Record<string, { dir: string; exts: string[] }> = {
 
 const WRITE_TOOLS = ["edit", "write", "patch"];
 
-// Conjunto de tools conhecidas pelo host do OpenCode. Qualquer tool fora
-// dessa lista (ex.: "finish") é inválida e pode indicar um loop de execução
-// do subagent.
+// Set of tools known to the OpenCode host. Any tool outside
+// this list (e.g., "finish") is invalid and may indicate an execution loop
+// of the subagent.
 const KNOWN_TOOLS = new Set([
   "read", "glob", "grep", "webfetch", "websearch",
   "edit", "write", "patch",
@@ -112,6 +112,7 @@ const BUILTIN_POLICIES: Record<string, Rule[]> = {
   ],
   general: [
     { action: "question", resource: "*", effect: "deny" },
+    { action: "subagent", resource: "*", effect: "deny" },
   ],
   title: [{ action: "*", resource: "*", effect: "deny" }],
   summary: [{ action: "*", resource: "*", effect: "deny" }],
@@ -133,17 +134,11 @@ function normalizePath(target: string): string {
   for (const marker of markers) {
     const idx = p.indexOf(marker);
     if (idx >= 0) {
-      // Find the path segment before the marker (the project root)
-      // Strip trailing slash from beforeMarker to get the actual project directory
+      // Find the path segment before the marker
       const beforeMarker = p.slice(0, idx).replace(/\/$/, "");
       const lastSlash = beforeMarker.lastIndexOf("/");
       if (lastSlash >= 0) {
-        // The project root is the segment after the last slash
-        // We want everything from the project root onwards
         p = p.slice(lastSlash + 1);
-      } else {
-        // No slash before marker, use everything from start
-        p = p.slice(0);
       }
       break;
     }
@@ -189,7 +184,7 @@ export default Plugin.define({
 
     // 2. The safety net — throws before the tool runs.
     await ctx.tool.hook("execute.before", async (event) => {
-      // 2a. Escrita fora da área do agente.
+      // 2a. Write outside agent's area.
       if (WRITE_TOOLS.includes(event.tool)) {
         const scope = STACK_SCOPES[event.agent ?? ""] ?? STACK_SCOPES[
           (await ctx.session?.get?.({ sessionID: event.sessionID }))?.agent ?? ""
@@ -214,24 +209,103 @@ export default Plugin.define({
         }
       }
 
-      // 2c. Detecção de loops de execução. Rastreia chamadas de tool por
-      // sessão e bloqueia quando o mesmo subagent repete a mesma tool
-      // excessivamente em uma janela de tempo (ex.: chamar "finish" que não
-      // existe, ou qualquer tool infinitamente sem progresso).
+      // 2b. Concurrency limit: orchestrate can have at most 5
+      // subagents running concurrently. Count each launched subagent and
+      // free the slot when the subagent delivers the delegation_report.
+      // If the limit is reached, try to clean up "stuck" slots (subagents
+      // that failed during execution without delivering any delegation_report
+      // within the STUCK_SLOT_TIMEOUT_MS).
+      if (event.tool === "subagent") {
+        const session = await ctx.session?.get?.({ sessionID: event.sessionID });
+        const agent = session?.agent ?? event.agent ?? "unknown";
+        if (agent === "orchestrate") {
+          const activeKey = `active-subagents:${event.sessionID}`;
+          const current = (await ctx.storage.get<number>(activeKey)) ?? 0;
+          if (current >= 5) {
+            // Try to clean up stuck slots before blocking.
+            const lastReportKey = `last-report:${event.sessionID}`;
+            const lastReport = (await ctx.storage.get<number>(lastReportKey)) ?? 0;
+            const now = Date.now();
+            if (now - lastReport > 120_000) {
+              // No report for more than 2 minutes: consider slots stuck and
+              // reset the counter to allow new delegation.
+              await ctx.storage.set(activeKey, 0);
+              await ctx.storage.set(`error-reports:${event.sessionID}`, 0);
+              return;
+            }
+            throw new Error(
+              `blocked by scope-guard: agent "orchestrate" already has 5 subagents running concurrently. ` +
+                `Wait for some to finish (delegation_report) before delegating more.`
+            );
+          }
+          await ctx.storage.set(activeKey, current + 1);
+        }
+      }
+
+      // Free a completed subagent's slot. When a subagent delivers
+      // the delegation_report, if it was launched by an orchestrate, decrement
+      // the concurrent subagent counter for that orchestrate. Only free the slot
+      // when the report indicates success: error reports do not free the slot,
+      // preventing the finish(error) -> report -> finish(error) -> report ... loop.
+      if (event.tool === "report" || event.tool === "delegation.report") {
+        const session = await ctx.session?.get?.({ sessionID: event.sessionID });
+        const parentID = session?.parentID;
+        if (!parentID) return;
+        const parentSession = await ctx.session?.get?.({ sessionID: parentID });
+        const parentAgent = parentSession?.agent ?? "unknown";
+        if (parentAgent !== "orchestrate") return;
+
+        const verdict = (event.input as Record<string, unknown> | undefined)?.verdict;
+        const isErrorReport = typeof verdict === "string" && verdict.toLowerCase() === "fail";
+
+        // Any report (success or failure) frees the concurrency slot.
+        // The subagent slot is done regardless of outcome.
+        const activeKey = `active-subagents:${parentID}`;
+        const current = (await ctx.storage.get<number>(activeKey)) ?? 0;
+        if (current > 0) {
+          await ctx.storage.set(activeKey, current - 1);
+        }
+
+        if (isErrorReport) {
+          // Count consecutive error reports from this subagent (separate from
+          // concurrency). After MAX_ERROR_REPORTS consecutive failures, block.
+          const errKey = `error-reports:${event.sessionID}`;
+          const errCount = ((await ctx.storage.get<number>(errKey)) ?? 0) + 1;
+          await ctx.storage.set(errKey, errCount);
+          if (errCount > 3) {
+            throw new Error(
+              `blocked by scope-guard: subagent "${event.agent ?? "unknown"}" delivered ${errCount} ` +
+                `consecutive error reports (limit 3). Possible execution loop. ` +
+                `Stop and report to the orchestrator.`
+            );
+          }
+        } else {
+          // Success report: reset the error counter.
+          await ctx.storage.set(`error-reports:${event.sessionID}`, 0);
+        }
+
+        // Mark the timestamp of the last report for stuck slot detection.
+        await ctx.storage.set(`last-report:${parentID}`, Date.now());
+      }
+
+      // 2c. Execution loop detection. Track tool calls per session and block
+      // when the same subagent repeats the same tool excessively in a time window
+      // (e.g., calling "finish" which doesn't exist, or any tool infinitely
+      // without progress).
       if (!ctx.storage) return;
 
       const sessionID = event.sessionID;
       const callsKey = `tool-calls:${sessionID}`;
       const now = Date.now();
 
-      // Recupera o histórico de calls da sessão.
+      // Retrieve the call history for this session.
       const history: ToolCallRecord[] =
         (await ctx.storage.get<ToolCallRecord[]>(callsKey)) ?? [];
 
-      // Filtra apenas calls dentro da janela de tempo.
+      // Filter only calls within the time window.
       const recent = history.filter((r) => now - r.timestamp < LOOP_WINDOW_MS);
 
-      // Tool desconhecida (ex.: "finish") — bloqueia imediatamente.
+      // Unknown tool (e.g., "finish") — block immediately.
       if (!KNOWN_TOOLS.has(event.tool)) {
         throw new Error(
           `blocked by scope-guard: tool "${event.tool}" is not a known OpenCode tool. ` +
@@ -239,11 +313,11 @@ export default Plugin.define({
         );
       }
 
-      // Adiciona a call atual ao histórico.
+      // Add the current call to history.
       recent.push({ tool: event.tool, timestamp: now });
       await ctx.storage.set(callsKey, recent);
 
-      // Loop: mesma tool chamada muitas vezes na janela.
+      // Loop: same tool called too many times in the window.
       const callsOfSameTool = recent.filter((r) => r.tool === event.tool).length;
       if (callsOfSameTool > MAX_CALLS_PER_TOOL) {
         throw new Error(
@@ -253,7 +327,7 @@ export default Plugin.define({
         );
       }
 
-      // Loop: total de calls excede o limite na janela.
+      // Loop: total calls exceed the limit in the window.
       if (recent.length > MAX_TOTAL_CALLS) {
         throw new Error(
           `blocked by scope-guard: ${recent.length} tool calls in the last ` +

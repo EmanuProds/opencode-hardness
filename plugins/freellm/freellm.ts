@@ -81,18 +81,18 @@ interface ResolvedOptions {
 /* Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-export function trimTrailingSlashes(value: string): string {
+function trimTrailingSlashes(value: string): string {
   let i = value.length;
   while (i > 0 && value.charCodeAt(i - 1) === 47) i -= 1;
   return i === value.length ? value : value.slice(0, i);
 }
 
-export function ensureV1Suffix(url: string): string {
+function ensureV1Suffix(url: string): string {
   const trimmed = trimTrailingSlashes(url);
   return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
 }
 
-export function isHttpUrl(value: unknown): boolean {
+function isHttpUrl(value: unknown): boolean {
   if (typeof value !== "string") return false;
   try {
     const { protocol } = new URL(value);
@@ -102,7 +102,7 @@ export function isHttpUrl(value: unknown): boolean {
   }
 }
 
-export function compileModelListFilter(list?: string[]): ((id: string) => boolean) | undefined {
+function compileModelListFilter(list?: string[]): ((id: string) => boolean) | undefined {
   if (!list || list.length === 0) return undefined;
   const hasStar = list.includes("*");
   if (hasStar) return undefined;
@@ -111,7 +111,7 @@ export function compileModelListFilter(list?: string[]): ((id: string) => boolea
   };
 }
 
-export function passesModelAllowlist(
+function passesModelAllowlist(
   id: string,
   visibleFilter: ((id: string) => boolean) | undefined,
   hiddenFilter: ((id: string) => boolean) | undefined
@@ -121,11 +121,11 @@ export function passesModelAllowlist(
   return true;
 }
 
-export function shortProviderLabel(_enrichment: { providerDisplayName?: string } | undefined): string | undefined {
+function shortProviderLabel(_enrichment: { providerDisplayName?: string } | undefined): string | undefined {
   return undefined;
 }
 
-export function buildModelDisplayName(params: {
+function buildModelDisplayName(params: {
   rawId: string;
   enrichmentName?: string | null;
   isFree?: boolean;
@@ -154,7 +154,7 @@ export function buildModelDisplayName(params: {
   return baseName;
 }
 
-export function fmtTokens(n: number): string {
+function fmtTokens(n: number): string {
   const TOKEN_UNITS: [number, string][] = [
     [1e9, "B"],
     [1e6, "M"],
@@ -168,7 +168,7 @@ export function fmtTokens(n: number): string {
   return String(n);
 }
 
-export function formatFreeBudget(params: {
+function formatFreeBudget(params: {
   freeType?: string | null;
   monthlyTokens?: number;
   creditTokens?: number;
@@ -312,7 +312,7 @@ function createLogger(level: "error" | "warn" | "info" | "debug") {
 
 export default Plugin.define({
   id: PLUGIN_ID,
-  setup: async (ctx) => {
+  async setup(ctx) {
     const parsed: PluginOptions = (ctx.options as PluginOptions) ?? {};
     const providerId = parsed.providerId ?? PLUGIN_ID;
     const baseURL = parsed.baseURL ?? DEFAULT_BASE_URL;

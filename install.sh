@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
-# install.sh — Instala o plugin delegation no OpenCode do usuário.
+# install.sh — Installs the delegation plugin into the user's OpenCode.
 #
-# Faz backup da configuração existente antes de sobrescrever.
+# Backs up existing configuration before overwriting.
 #
-# Uso:
+# Usage:
 #   ./install.sh
 #
 
@@ -18,31 +18,31 @@ PLUGIN_DST="${PLUGIN_DST_DIR}/delegation.ts"
 CONFIG_SRC="${REPO_DIR}/opencode.json"
 CONFIG_DST="${HOME}/.config/opencode/opencode.json"
 
-echo "==> Instalando plugin delegation (opencode-hardness)"
+echo "==> Installing delegation plugin (opencode-hardness)"
 
-# --- Garante que o diretório de plugins exista ---
+# --- Ensure plugin directory exists ---
 mkdir -p "${PLUGIN_DST_DIR}"
 
-# --- Copia o plugin ---
+# --- Copy the plugin ---
 if [[ -f "${PLUGIN_SRC}" ]]; then
   cp "${PLUGIN_SRC}" "${PLUGIN_DST}"
-  echo "   plugin copiado para ${PLUGIN_DST}"
+  echo "   plugin copied to ${PLUGIN_DST}"
 else
-  echo "   ERRO: plugin não encontrado em ${PLUGIN_SRC}" >&2
+  echo "   ERROR: plugin not found at ${PLUGIN_SRC}" >&2
   exit 1
 fi
 
-# --- Backup e instalação do opencode.json ---
+# --- Backup and install opencode.json ---
 if [[ -f "${CONFIG_SRC}" ]]; then
   if [[ -f "${CONFIG_DST}" ]]; then
     BACKUP="${CONFIG_DST}.bak.$(date +%Y%m%d%H%M%S)"
     cp "${CONFIG_DST}" "${BACKUP}"
-    echo "   backup da config existente: ${BACKUP}"
+    echo "   backup of existing config: ${BACKUP}"
   fi
   cp "${CONFIG_SRC}" "${CONFIG_DST}"
-  echo "   opencode.json instalado em ${CONFIG_DST}"
+  echo "   opencode.json installed to ${CONFIG_DST}"
 else
-  echo "   AVISO: opencode.json não encontrado em ${CONFIG_SRC}, pulando."
+  echo "   WARNING: opencode.json not found at ${CONFIG_SRC}, skipping."
 fi
 
-echo "==> Instalação concluída."
+echo "==> Installation complete."

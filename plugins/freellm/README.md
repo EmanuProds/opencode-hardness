@@ -76,3 +76,7 @@ Resolved in this order:
 - Calls `ctx.provider.reload()` when the catalog fingerprint changes.
 - Models with `available: false` and `unavailable_reason: "no_key"` are marked
   as free-tier (`isFree`) and shown with a `[Free]` prefix.
+
+## License
+
+MIT

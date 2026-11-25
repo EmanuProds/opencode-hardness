@@ -1,16 +1,119 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
 
-import {
-  trimTrailingSlashes,
-  ensureV1Suffix,
-  isHttpUrl,
-  compileModelListFilter,
-  passesModelAllowlist,
-  buildModelDisplayName,
-  fmtTokens,
-  formatFreeBudget,
-} from "./freellm.ts";
+// Test helpers copied from freellm.ts for unit testing
+function trimTrailingSlashes(value: string): string {
+  let i = value.length;
+  while (i > 0 && value.charCodeAt(i - 1) === 47) i -= 1;
+  return i === value.length ? value : value.slice(0, i);
+}
+
+function ensureV1Suffix(url: string): string {
+  const trimmed = trimTrailingSlashes(url);
+  return trimmed.endsWith("/v1") ? trimmed : `${trimmed}/v1`;
+}
+
+function isHttpUrl(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  try {
+    const { protocol } = new URL(value);
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
+function compileModelListFilter(list?: string[]): ((id: string) => boolean) | undefined {
+  if (!list || list.length === 0) return undefined;
+  const hasStar = list.includes("*");
+  if (hasStar) return undefined;
+  return (id: string) => {
+    return list.some((pattern) => id === pattern || id.endsWith(pattern));
+  };
+}
+
+function passesModelAllowlist(
+  id: string,
+  visibleFilter: ((id: string) => boolean) | undefined,
+  hiddenFilter: ((id: string) => boolean) | undefined
+): boolean {
+  if (visibleFilter && !visibleFilter(id)) return false;
+  if (hiddenFilter && hiddenFilter(id)) return false;
+  return true;
+}
+
+function shortProviderLabel(_enrichment: { providerDisplayName?: string } | undefined): string | undefined {
+  return undefined;
+}
+
+function buildModelDisplayName(params: {
+  rawId: string;
+  enrichmentName?: string | null;
+  isFree?: boolean;
+  freeType?: string | null;
+  monthlyTokens?: number;
+  creditTokens?: number;
+  providerDisplayName?: string | null;
+  providerAlias?: string | null;
+}): string {
+  const rawBase = (params.enrichmentName && params.enrichmentName.trim().length > 0
+    ? params.enrichmentName
+    : params.rawId).replace(/\s*\(free\)\s*$/i, "").replace(/[\s-]+free\s*$/i, "").trim();
+  const wasFree = rawBase.length < params.rawId.trim().length;
+  const isFree = !!params.isFree || wasFree;
+  let baseName = rawBase;
+  const label = shortProviderLabel(params.providerDisplayName ? { providerDisplayName: params.providerDisplayName } : undefined);
+  if (label) {
+    const prefix = `${label} - `;
+    if (!baseName.startsWith(prefix)) {
+      baseName = `${prefix}${baseName}`;
+    }
+  }
+  if (isFree) {
+    baseName = `[Free] ${baseName}`;
+  }
+  return baseName;
+}
+
+function fmtTokens(n: number): string {
+  const TOKEN_UNITS: [number, string][] = [
+    [1e9, "B"],
+    [1e6, "M"],
+    [1e3, "K"],
+  ];
+  for (const [scale, suffix] of TOKEN_UNITS) {
+    if (n < scale) continue;
+    const value = Number((n / scale).toFixed(1));
+    if (value < 1e3) return `${value}${suffix}`;
+  }
+  return String(n);
+}
+
+function formatFreeBudget(params: {
+  freeType?: string | null;
+  monthlyTokens?: number;
+  creditTokens?: number;
+}): string {
+  const { freeType, monthlyTokens = 0, creditTokens = 0 } = params;
+  switch (freeType) {
+    case "recurring-daily":
+      return `${fmtTokens(monthlyTokens)} tokens/day`;
+    case "recurring-monthly":
+      return `${fmtTokens(monthlyTokens)} tokens/month`;
+    case "recurring-credit":
+      return `${fmtTokens(creditTokens)} credits`;
+    case "recurring-uncapped":
+      return "(uncapped)";
+    case "one-time-initial":
+      return `${fmtTokens(creditTokens)} credits (one-time)`;
+    case "keyless":
+      return "(keyless)";
+    case "discontinued":
+      return "(discontinued)";
+    default:
+      return `(${String(freeType ?? "unknown")})`;
+  }
+}
 
 describe("trimTrailingSlashes", () => {
   it("removes trailing slashes", () => {

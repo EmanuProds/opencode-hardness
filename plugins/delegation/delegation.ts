@@ -634,12 +634,3 @@ export default Plugin.define({
     });
   },
 });
-
-async function readFileIfPossibleTopLevel(path: string): Promise<string | undefined> {
-  try {
-    const fs = await import("node:fs/promises");
-    return await fs.readFile(path, "utf8");
-  } catch {
-    return undefined;
-  }
-}
