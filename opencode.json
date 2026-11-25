@@ -26,6 +26,17 @@
       "startup": 30000
     }
   },
+  "plugins": [
+    {
+      "package": "file:///home/emanuel/Projects/AI/opencode-hardness/plugins/freellm",
+      "options": {
+        "providerId": "freellm",
+        "baseURL": "http://127.0.0.1:31415",
+        "apiKey": "{file:~/.config/opencode/secrets/freellm.key}",
+        "displayName": "FreeLLM"
+      }
+    }
+  ],
   "snapshots": true,
   "lsp": {
     "github-actions": {
