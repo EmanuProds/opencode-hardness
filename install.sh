@@ -2,6 +2,7 @@
 #
 # install.sh — Installs all OpenCode plugins from this repository.
 #
+# Copies only the server entrypoint and the plugin implementation file.
 # Backs up existing configuration before overwriting.
 #
 # Usage:
@@ -21,7 +22,7 @@ echo "==> Installing OpenCode plugins from opencode-hardness"
 # --- Ensure plugin directory exists ---
 mkdir -p "${PLUGIN_DST_DIR}"
 
-# --- Copy every plugin folder entirely ---
+# --- Copy only essential plugin files ---
 installed=0
 for plugin_dir in "${PLUGINS_SRC_DIR}"/*/; do
   plugin_name="$(basename "${plugin_dir}")"
@@ -33,7 +34,18 @@ for plugin_dir in "${PLUGINS_SRC_DIR}"/*/; do
   fi
 
   mkdir -p "${PLUGIN_DST_DIR}/${plugin_name}"
-  cp -r "${plugin_dir}"* "${PLUGIN_DST_DIR}/${plugin_name}/" 2>/dev/null || true
+
+  # Copy server.js (required entrypoint for OpenCode host)
+  if [[ -f "${plugin_dir}/server.js" ]]; then
+    cp "${plugin_dir}/server.js" "${PLUGIN_DST_DIR}/${plugin_name}/server.js"
+  fi
+
+  # Copy the plugin implementation (.js preferred over .ts)
+  if [[ -f "${plugin_dir}/${plugin_name}.js" ]]; then
+    cp "${plugin_dir}/${plugin_name}.js" "${PLUGIN_DST_DIR}/${plugin_name}/${plugin_name}.js"
+  elif [[ -f "${plugin_dir}/${plugin_name}.ts" ]]; then
+    cp "${plugin_dir}/${plugin_name}.ts" "${PLUGIN_DST_DIR}/${plugin_name}/${plugin_name}.ts"
+  fi
 
   echo "   plugin installed: ${plugin_name}"
   installed=$((installed + 1))
