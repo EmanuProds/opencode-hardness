@@ -67,7 +67,7 @@
         "auto:review": {
           "name": "Auto: Review (named fallback chain)",
           "limit": {
-            "context": 838860,
+            "context": 800000,
             "output": 8192
           }
         },
