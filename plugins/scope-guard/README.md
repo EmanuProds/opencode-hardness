@@ -10,7 +10,7 @@ Add to your `opencode.json`:
 {
   "plugins": [
     {
-      "package": "file:///home/emanuel/Projects/AI/opencode-hardness/plugins/scope-guard",
+      "package": "file:///path/to/opencode-hardness/plugins/scope-guard",
       "options": {}
     }
   ]

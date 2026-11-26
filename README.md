@@ -33,7 +33,7 @@ Other plugins can be added to `opencode.json` manually by referencing their loca
 {
   "plugins": [
     {
-      "package": "file:///home/emanuel/Projects/AI/opencode-hardness/plugins/freellm",
+      "package": "file:///path/to/opencode-hardness/plugins/freellm",
       "options": {
         "providerId": "freellm",
         "baseURL": "http://127.0.0.1:31415"

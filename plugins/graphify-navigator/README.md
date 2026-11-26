@@ -10,7 +10,7 @@ Add to your `opencode.json`:
 {
   "plugins": [
     {
-      "package": "file:///home/emanuel/Projects/AI/opencode-hardness/plugins/graphify-navigator",
+      "package": "file:///path/to/opencode-hardness/plugins/graphify-navigator",
       "options": {}
     }
   ]

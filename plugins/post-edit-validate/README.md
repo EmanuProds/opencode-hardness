@@ -10,7 +10,7 @@ Add to your `opencode.json`:
 {
   "plugins": [
     {
-      "package": "file:///home/emanuel/Projects/AI/opencode-hardness/plugins/post-edit-validate",
+      "package": "file:///path/to/opencode-hardness/plugins/post-edit-validate",
       "options": {
         "projectRoot": "/path/to/project",
         "gateCommands": {
