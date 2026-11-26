@@ -26,17 +26,61 @@
       "startup": 30000
     }
   },
-  "plugins": [
-    {
-      "package": "file:///path/to/opencode-hardness/plugins/freellm",
+  "model": "freellmapi/auto",
+  "provider": {
+    "freellmapi": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "FreeLLMAPI",
       "options": {
-        "providerId": "freellm",
-        "baseURL": "http://127.0.0.1:31415",
-        "apiKey": "{file:~/.config/opencode/secrets/freellm.key}",
-        "displayName": "FreeLLM"
+        "baseURL": "http://127.0.0.1:31415/v1",
+        "apiKey": "{file:~/.config/opencode/secrets/freellm.key}"
+      },
+      "models": {
+        "auto": {
+          "name": "Auto (router picks the best available model)",
+          "limit": {
+            "context": 104857,
+            "output": 8192
+          }
+        },
+        "auto:code": {
+          "name": "Auto: Code (named fallback chain)",
+          "limit": {
+            "context": 204800,
+            "output": 8192
+          }
+        },
+        "auto:contracts": {
+          "name": "Auto: Contracts (named fallback chain)",
+          "limit": {
+            "context": 209715,
+            "output": 8192
+          }
+        },
+        "auto:database": {
+          "name": "Auto: Database (named fallback chain)",
+          "limit": {
+            "context": 800000,
+            "output": 8192
+          }
+        },
+        "auto:review": {
+          "name": "Auto: Review (named fallback chain)",
+          "limit": {
+            "context": 838860,
+            "output": 8192
+          }
+        },
+        "auto:orchastrate": {
+          "name": "Auto: Orchastrate (named fallback chain)",
+          "limit": {
+            "context": 800000,
+            "output": 8192
+          }
+        }
       }
     }
-  ],
+  },
   "snapshots": true,
   "lsp": {
     "github-actions": {
